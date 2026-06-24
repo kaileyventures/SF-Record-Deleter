@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "SF Record Deleter",
+  "version": "1.0",
+  "permissions": [
+    "activeTab",
+    "cookies",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.salesforce.com/*",
+    "*://*.force.com/*"
+  ],
+  "icons": {
+    "48": "icon48.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon48.png"
+  }
+}
