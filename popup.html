@@ -16,6 +16,7 @@
             --text-muted: #94a3b8;
             --error-red: #ef4444;
             --success-green: #22c55e;
+            --warning-yellow: #f59e0b;
         }
 
         body { 
@@ -81,6 +82,11 @@
             outline: none; transition: all 0.3s;
         }
 
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--sf-primary);
+            box-shadow: 0 0 10px rgba(1, 118, 211, 0.3);
+        }
+
         textarea { 
             resize: none; 
             font-family: monospace; 
@@ -88,6 +94,7 @@
             color: #bae6fd;
             scrollbar-width: thin;
             scrollbar-color: var(--sf-primary) rgba(4, 9, 18, 0.8);
+            min-height: 80px;
         }
 
         /* Custom Scrollbar Styling */
@@ -111,20 +118,107 @@
             background: var(--sf-hover);
         }
 
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-direction: column;
+        }
+
         button { 
             background: linear-gradient(135deg, var(--sf-primary), var(--sf-hover)); 
             color: #fff; font-weight: 600; font-size: 14px; cursor: pointer; 
             border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; 
-            margin-top: 6px; display: flex; align-items: center; justify-content: center; 
-            gap: 8px; box-shadow: 0 4px 15px rgba(1, 118, 211, 0.4); 
+            display: flex; align-items: center; justify-content: center; 
+            gap: 8px; box-shadow: 0 4px 15px rgba(1, 118, 211, 0.4);
+            transition: all 0.3s ease;
         }
-        
-        .btn-error { background: linear-gradient(135deg, var(--error-red), #991b1b); }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(1, 118, 211, 0.6);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Button Styles - Updated from JS */
+        .btn-delete {
+            background: linear-gradient(135deg, #ef4444, #991b1b) !important;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
+        }
+
+        .btn-delete:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6) !important;
+        }
+
+        .btn-insert {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+        }
+
+        .btn-insert:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6) !important;
+        }
+
+        .btn-update {
+            background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
+        }
+
+        .btn-update:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
+        }
+
+        #cancelBtn {
+            background: linear-gradient(135deg, var(--warning-yellow), #d97706) !important;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4) !important;
+        }
+
+        #cancelBtn:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6) !important;
+        }
+
+        .btn-error { 
+            background: linear-gradient(135deg, var(--error-red), #991b1b) !important;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
+        }
+
+        .btn-error:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6) !important;
+        }
 
         #status { 
             font-size: 11px; text-align: center; margin-top: 4px; color: #7dd3fc; 
             background: rgba(0,0,0,0.4); border-radius: 10px; padding: 10px; 
-            max-height: 60px; overflow-y: auto; word-break: break-all; display: none;
+            max-height: 100px; overflow-y: auto; word-break: break-word; display: none;
+            line-height: 1.4;
+            border: 1px solid var(--border-light);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #status {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Info badge */
+        .info-badge {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-align: center;
         }
     </style>
 </head>
@@ -147,20 +241,23 @@
             </div>
             <div class="input-group">
                 <label>Object API Name</label>
-                <input type="text" id="objectName" value="CISC__Lead__c">
+                <input type="text" id="objectName" value="CISC__Lead__c" placeholder="e.g. Account, Lead__c">
             </div>
             <div class="input-group">
                 <label>Data Payload</label>
-                <textarea id="dataInput" rows="4" placeholder="Paste IDs or JSON..."></textarea>
+                <textarea id="dataInput" placeholder="Paste IDs (for delete) or JSON array (for insert/update)"></textarea>
+                <div class="info-badge" id="payloadInfo">Waiting for input...</div>
             </div>
-            <button id="executeBtn">Execute Pipeline</button>
+            <div class="button-group">
+                <button id="executeBtn">Execute Pipeline</button>
+            </div>
             <div id="status"></div>
         </div>
 
         <div id="invalidTabScreen">
             <div class="header">
                 <div class="logo-wrapper" style="background: #991b1b; animation: none;">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 </div>
                 <h3>Environment Locked</h3>
                 <p style="color: var(--text-muted); font-size: 12px;">Restricted to Salesforce CRM.</p>
