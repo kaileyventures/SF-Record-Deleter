@@ -81,7 +81,35 @@
             outline: none; transition: all 0.3s;
         }
 
-        textarea { resize: none; font-family: monospace; font-size: 11px; color: #bae6fd; }
+        textarea { 
+            resize: none; 
+            font-family: monospace; 
+            font-size: 11px; 
+            color: #bae6fd;
+            scrollbar-width: thin;
+            scrollbar-color: var(--sf-primary) rgba(4, 9, 18, 0.8);
+        }
+
+        /* Custom Scrollbar Styling */
+        textarea::-webkit-scrollbar, #status::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        textarea::-webkit-scrollbar-track, #status::-webkit-scrollbar-track {
+            background: rgba(4, 9, 18, 0.8);
+            border-radius: 10px;
+        }
+
+        textarea::-webkit-scrollbar-thumb, #status::-webkit-scrollbar-thumb {
+            background: var(--sf-primary);
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        textarea::-webkit-scrollbar-thumb:hover, #status::-webkit-scrollbar-thumb:hover {
+            background: var(--sf-hover);
+        }
 
         button { 
             background: linear-gradient(135deg, var(--sf-primary), var(--sf-hover)); 
