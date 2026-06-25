@@ -9,6 +9,7 @@ A lightweight Chrome extension to bulk Delete, Insert, and Update Salesforce rec
 ---
 
 ## 🔥 Features
+
 - Delete records by ID (supports 15 & 18 character IDs)
 - Insert and Update records via JSON payloads
 - Uses your current Salesforce session cookie — no extra auth steps
@@ -19,13 +20,15 @@ A lightweight Chrome extension to bulk Delete, Insert, and Update Salesforce rec
 ---
 
 ## 🖼️ Screenshot
-*(Replace with actual screenshot or animated GIF)*
+
+_(Replace with actual screenshot or animated GIF)_
 
 ---
 
 ## 🚀 Quick Start
 
 1. Clone the repo:
+
    ```bash
    git clone https://github.com/kaileyventures/SF-Record-Deleter.git
    cd SF-Record-Deleter
@@ -57,12 +60,14 @@ A lightweight Chrome extension to bulk Delete, Insert, and Update Salesforce rec
 ## 📥 Examples
 
 Delete (IDs, newline-separated):
+
 ```
 001xx000003DGb1AAG
 003xx000004TmiHAAS
 ```
 
 Insert (JSON array):
+
 ```json
 [
   { "Name": "Acme Corp", "Industry": "Technology" },
@@ -71,6 +76,7 @@ Insert (JSON array):
 ```
 
 Update (JSON array — must include `Id`):
+
 ```json
 [
   { "Id": "001xx000003DGb1AAG", "Industry": "Healthcare" },
@@ -110,6 +116,7 @@ Update (JSON array — must include `Id`):
 ## 📣 Contributing
 
 Contributions are welcome! Suggested ways to help:
+
 - Add e2e tests for bulk operations
 - Improve UI/UX and accessibility
 - Support more Salesforce domain mappings or OAuth flows
@@ -119,6 +126,7 @@ Please open issues/PRs with clear descriptions and examples.
 ---
 
 ## 🧾 Changelog
+
 See Git history for details. Keep the extension versioned in the manifest for release notes.
 
 ---
