@@ -21,6 +21,7 @@
 
         html, body {
             width: 320px;
+            min-height: 380px;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -34,9 +35,18 @@
             flex-direction: column; 
             gap: 14px; 
             padding: 16px;
-            max-height: 600px;
-            overflow-y: auto;
             box-sizing: border-box;
+        }
+
+        .row-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .half-width {
+            flex: 1;
+            min-width: 0;
         }
 
         #validTabScreen { 
@@ -88,9 +98,9 @@
         .input-group { display: flex; flex-direction: column; }
 
         select, input, textarea { 
-            width: 100%; box-sizing: border-box; border-radius: 12px; 
+            width: 100%; box-sizing: border-box; border-radius: 10px; 
             background: rgba(4, 9, 18, 0.8); border: 1px solid var(--border-light); 
-            color: var(--text-main); padding: 10px 12px; font-size: 13px; 
+            color: var(--text-main); padding: 8px 10px; font-size: 12px; 
             outline: none; transition: all 0.3s;
         }
 
@@ -106,7 +116,7 @@
             color: #bae6fd;
             scrollbar-width: thin;
             scrollbar-color: rgba(1, 118, 211, 0.4) rgba(4, 9, 18, 0.6);
-            min-height: 80px;
+            height: 90px;
         }
 
         /* Custom Scrollbar Styling (Global) */
@@ -243,17 +253,19 @@
                 </div>
                 <h3>SF Record Deleter</h3>
             </div>
-            <div class="input-group">
-                <label>Action</label>
-                <select id="action">
-                    <option value="delete">Delete Records</option>
-                    <option value="insert">Insert Records</option>
-                    <option value="update">Update Records</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label>Object API Name</label>
-                <input type="text" id="objectName" value="CISC__Lead__c" placeholder="e.g. Account, Lead__c">
+            <div class="row-group">
+                <div class="input-group half-width">
+                    <label>Action</label>
+                    <select id="action">
+                        <option value="delete">Delete Records</option>
+                        <option value="insert">Insert Records</option>
+                        <option value="update">Update Records</option>
+                    </select>
+                </div>
+                <div class="input-group half-width">
+                    <label>Object API Name</label>
+                    <input type="text" id="objectName" value="CISC__Lead__c" placeholder="e.g. Account">
+                </div>
             </div>
             <div class="input-group">
                 <label>Data Payload</label>

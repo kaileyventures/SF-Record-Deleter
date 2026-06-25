@@ -48,6 +48,7 @@ const UI = {
 // ============================================
 let abortController = new AbortController();
 let isProcessing = false;
+let keyPrefixMap = null;
 
 // ============================================
 // 📝 UTILITY FUNCTIONS
@@ -60,11 +61,8 @@ const log = (message, data = '') => {
     console.log(`[SF-Record-Deleter] ${message}`, data);
 };
 
-/**
- * Error logging
- */
 const logError = (message, error = '') => {
-    console.error(`[SF-Record-Deleter ERROR] ${message}`, error);
+    console.warn(`[SF-Record-Deleter ERROR] ${message}`, error);
 };
 
 /**
@@ -122,6 +120,37 @@ const getSalesforceTab = async () => {
     }
     
     return sfTab;
+};
+
+/**
+ * Fetch and build the key prefix to SObject API Name mapping
+ */
+const fetchKeyPrefixMap = async (sessionId, apiDomain) => {
+    if (keyPrefixMap) return keyPrefixMap;
+    
+    try {
+        const response = await fetch(`${apiDomain}/services/data/${CONFIG.API_VERSION}/sobjects/`, {
+            headers: {
+                'Authorization': `Bearer ${sessionId}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            keyPrefixMap = {};
+            data.sobjects.forEach(sobj => {
+                if (sobj.keyPrefix) {
+                    keyPrefixMap[sobj.keyPrefix] = sobj.name;
+                }
+            });
+            log(`Loaded ${Object.keys(keyPrefixMap).length} key prefix mappings.`);
+            return keyPrefixMap;
+        }
+    } catch (e) {
+        logError('Failed to fetch key prefix map', e.message);
+    }
+    return null;
 };
 
 /**
@@ -224,24 +253,29 @@ const retryFetch = async (url, options, attempt = 1) => {
     }
 };
 
-/**
- * Handle API errors gracefully
- */
 const handleApiError = (response, action, record) => {
     return response.text().then(errorText => {
-        // Special case: already deleted entity
+        // Already deleted entity
         if (action === 'delete' && errorText.includes(CONFIG.SALESFORCE_ERRORS.ENTITY_DELETED)) {
-            return { success: true, message: 'Already deleted' };
+            return { success: false, message: 'Already deleted' };
         }
         
         // Try to parse Salesforce error response
         try {
             const errors = JSON.parse(errorText);
             if (Array.isArray(errors) && errors[0]?.message) {
-                return { success: false, message: errors[0].message };
+                let msg = errors[0].message;
+                if (msg.includes('The requested resource does not exist')) {
+                    msg = 'Record not found';
+                }
+                return { success: false, message: msg };
             }
         } catch (e) {
             // Not JSON, return as is
+        }
+        
+        if (errorText.includes('The requested resource does not exist')) {
+            return { success: false, message: 'Record not found' };
         }
         
         return { success: false, message: errorText || 'Unknown error' };
@@ -313,7 +347,15 @@ const processRecords = async (action, objectName, records, sessionId, apiDomain)
             updateStatus(`${progress}\n${stats}\n\nProcessing...`, '#38bdf8');
             
             // Build request
-            const endpoint = buildEndpoint(apiDomain, objectName, action, records[i]);
+            let sObjectName = objectName;
+            if (action === 'delete' && typeof records[i] === 'string' && records[i].length >= 3) {
+                const prefix = records[i].substring(0, 3);
+                if (keyPrefixMap && keyPrefixMap[prefix]) {
+                    sObjectName = keyPrefixMap[prefix];
+                    log(`Auto-resolved ID ${records[i]} to SObject: ${sObjectName}`);
+                }
+            }
+            const endpoint = buildEndpoint(apiDomain, sObjectName, action, records[i]);
             const { method, bodyData } = buildRequest(action, records[i]);
             
             log(`[${action.toUpperCase()}] Record ${i + 1}/${records.length}: ${records[i]?.Id || records[i]}`);
@@ -384,23 +426,21 @@ const processRecords = async (action, objectName, records, sessionId, apiDomain)
     return results;
 };
 
-/**
- * Format final result message
- */
 const formatResultMessage = (action, results) => {
-    let message = `✅ ${action.toUpperCase()} Complete!\n`;
-    message += `✅ Success: ${results.successCount}\n`;
-    message += `❌ Failed: ${results.failCount}`;
+    let message = `${action.toUpperCase()} - Success: ${results.successCount} | Failed: ${results.failCount}`;
     
     if (results.cancelledAt !== null) {
-        message += `\n⏸️  Cancelled at record ${results.cancelledAt + 1}`;
+        message += ` (Cancelled at #${results.cancelledAt + 1})`;
     }
     
-    if (results.failedRecords.length > 0 && results.failedRecords.length <= 5) {
-        message += '\n\nFailed records:\n';
-        results.failedRecords.forEach(record => {
-            message += `• Record ${record.index}: ${record.error.substring(0, 50)}...\n`;
+    if (results.failedRecords.length > 0) {
+        message += '\nErrors:\n';
+        results.failedRecords.slice(0, 3).forEach(record => {
+            message += `• #${record.index}: ${record.error.substring(0, 45)}\n`;
         });
+        if (results.failedRecords.length > 3) {
+            message += `• ...and ${results.failedRecords.length - 3} more errors`;
+        }
     }
     
     return message;
@@ -525,6 +565,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     UI.dataInput.addEventListener('input', updatePayloadInfo);
     UI.executeBtn.addEventListener('click', executeOperation);
     
+    // Add keydown listeners for shortcuts
+    UI.objectNameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            executeOperation();
+        }
+    });
+    
+    UI.dataInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            executeOperation();
+        }
+    });
+    
     // 3. Initialize state/UI updates
     updateButtonUI();
     updatePayloadInfo();
@@ -581,6 +636,12 @@ const executeOperation = async () => {
         const sessionId = await getCookie(apiDomain, CONFIG.COOKIE_NAME);
         
         log(`✅ Authentication successful`);
+        
+        // Fetch key prefixes mapping to automatically resolve correct Object API Names for IDs
+        if (action === 'delete') {
+            updateStatus(`🔐 Authenticating...\nResolving Salesforce object metadata...`, '#38bdf8');
+            await fetchKeyPrefixMap(sessionId, apiDomain);
+        }
         
         // ✅ #4: Process all records (continues on error)
         updateStatus(`🚀 Starting ${action} operation...\n0 of ${records.length}...`, '#38bdf8');
