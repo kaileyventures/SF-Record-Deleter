@@ -21,7 +21,7 @@ A lightweight Chrome extension to bulk Delete, Insert, and Update Salesforce rec
 
 ## 🖼️ Screenshot
 
-_(Replace with actual screenshot or animated GIF)_
+![Image](image.png)
 
 ---
 
