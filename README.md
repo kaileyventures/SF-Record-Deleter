@@ -131,5 +131,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🙋 Contact
 
-Built with ❤️ by the kaileyventures team.  
+Built with ❤️ by the **KAILEY**VENTURES team.  
 For feedback or help: open an issue on this repository.
