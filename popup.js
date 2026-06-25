@@ -103,22 +103,25 @@ const getCookie = (url, name) => {
 };
 
 /**
- * Validate tab is on Salesforce
+ * Retrieve Salesforce tab for session domain
+ * Priority: 1. Active tab, 2. Any Salesforce tab in the browser
  */
-const validateTab = async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
-    if (!tab) {
-        throw new Error('No active tab found');
+const getSalesforceTab = async () => {
+    // 1. Try active tab in current window
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (activeTab && activeTab.url && CONFIG.SF_DOMAINS.some(domain => activeTab.url.includes(domain))) {
+        return activeTab;
     }
     
-    const isSalesforce = CONFIG.SF_DOMAINS.some(domain => tab.url?.includes(domain));
+    // 2. Try any Salesforce tab in the browser
+    const allTabs = await chrome.tabs.query({});
+    const sfTab = allTabs.find(tab => tab.url && CONFIG.SF_DOMAINS.some(domain => tab.url.includes(domain)));
     
-    if (!isSalesforce) {
-        throw new Error('Not on a Salesforce tab');
+    if (!sfTab) {
+        throw new Error('No active Salesforce session found. Please open a Salesforce tab first.');
     }
     
-    return tab;
+    return sfTab;
 };
 
 /**
@@ -343,6 +346,7 @@ const processRecords = async (action, objectName, records, sessionId, apiDomain)
                     results.failedRecords.push({
                         index: i + 1,
                         id: records[i]?.Id || records[i],
+                        record: records[i],
                         error: errorInfo.message,
                         status: response.status
                     });
@@ -366,6 +370,7 @@ const processRecords = async (action, objectName, records, sessionId, apiDomain)
             results.failedRecords.push({
                 index: i + 1,
                 id: records[i]?.Id || records[i],
+                record: records[i],
                 error: error.message
             });
             
@@ -406,6 +411,34 @@ const formatResultMessage = (action, results) => {
 // ============================================
 
 /**
+ * Update payload info badge with record count
+ */
+const updatePayloadInfo = () => {
+    const action = UI.actionSelect?.value;
+    const value = UI.dataInput?.value?.trim();
+    const infoBadge = document.getElementById('payloadInfo');
+    
+    if (!infoBadge) return;
+    
+    if (!value) {
+        infoBadge.textContent = 'Waiting for input...';
+        return;
+    }
+    
+    try {
+        if (action === 'delete') {
+            const ids = parseDeleteData(value);
+            infoBadge.textContent = `${ids.length} valid ID(s) detected`;
+        } else {
+            const records = parseJsonData(value);
+            infoBadge.textContent = `${records.length} record(s) detected in JSON`;
+        }
+    } catch (error) {
+        infoBadge.textContent = 'Invalid format';
+    }
+};
+
+/**
  * Update button UI based on action
  */
 const updateButtonUI = () => {
@@ -421,7 +454,6 @@ const updateButtonUI = () => {
  */
 const initializeUI = () => {
     UI.validScreen = document.getElementById('validTabScreen');
-    UI.invalidScreen = document.getElementById('invalidTabScreen');
     UI.actionSelect = document.getElementById('action');
     UI.executeBtn = document.getElementById('executeBtn');
     UI.statusDiv = document.getElementById('status');
@@ -479,46 +511,28 @@ const addButtonStyles = () => {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // Initialize
-        initializeUI();
-        addButtonStyles();
-        addCancelButton();
-        
-        log('🚀 Extension loaded');
-        
-        // Check if on Salesforce
-        const tab = await validateTab();
-        UI.validScreen.style.display = 'flex';
-        
-        log(`✅ On Salesforce tab: ${tab.url}`);
-        
-        // Setup action change listener
-        UI.actionSelect.addEventListener('change', updateButtonUI);
+    // 1. Initialize UI elements
+    initializeUI();
+    addButtonStyles();
+    addCancelButton();
+    
+    // 2. Setup event listeners
+    UI.actionSelect.addEventListener('change', () => {
         updateButtonUI();
-        
-        // Setup find Salesforce tab button
-        document.getElementById('findSfBtn').addEventListener('click', async () => {
-            const allTabs = await chrome.tabs.query({});
-            const sfTab = allTabs.find(t => 
-                CONFIG.SF_DOMAINS.some(domain => t.url?.includes(domain))
-            );
-            
-            if (sfTab) {
-                await chrome.windows.update(sfTab.windowId, { focused: true });
-                await chrome.tabs.update(sfTab.id, { active: true });
-            } else {
-                chrome.tabs.create({ url: 'https://login.salesforce.com' });
-            }
-        });
-        
-        // Setup execute button
-        UI.executeBtn.addEventListener('click', executeOperation);
-        
-    } catch (error) {
-        UI.invalidScreen.style.display = 'flex';
-        logError('Initialization failed', error.message);
-    }
+        updatePayloadInfo();
+    });
+    
+    UI.dataInput.addEventListener('input', updatePayloadInfo);
+    UI.executeBtn.addEventListener('click', executeOperation);
+    
+    // 3. Initialize state/UI updates
+    updateButtonUI();
+    updatePayloadInfo();
+    
+    // Show the main panel immediately
+    UI.validScreen.style.display = 'flex';
+    
+    log('🚀 Extension loaded and ready');
 });
 
 /**
@@ -536,8 +550,8 @@ const executeOperation = async () => {
         UI.executeBtn.disabled = true;
         UI.cancelBtn.style.display = 'flex';
         
-        // ✅ #1: Validate tab (every time, not just once)
-        const tab = await validateTab();
+        // ✅ #1: Retrieve Salesforce tab for session domain
+        const tab = await getSalesforceTab();
         
         // Get form data
         const action = UI.actionSelect.value;
@@ -583,6 +597,29 @@ const executeOperation = async () => {
         // Success animation
         if (results.failCount === 0) {
             document.getElementById('mainLogo').classList.add('success-glow');
+        }
+        
+        // Update input payload textarea to only show failed/remaining records
+        if (results.successCount > 0 || results.cancelledAt !== null) {
+            const remainingRecords = [];
+            for (let i = 0; i < records.length; i++) {
+                const wasCancelled = results.cancelledAt !== null && i >= results.cancelledAt;
+                const isFailed = results.failedRecords.some(fr => fr.index === i + 1);
+                if (wasCancelled || isFailed) {
+                    remainingRecords.push(records[i]);
+                }
+            }
+            
+            if (remainingRecords.length === 0) {
+                UI.dataInput.value = '';
+            } else {
+                if (action === 'delete') {
+                    UI.dataInput.value = remainingRecords.join('\n');
+                } else {
+                    UI.dataInput.value = JSON.stringify(remainingRecords, null, 2);
+                }
+            }
+            updatePayloadInfo(); // Update count badge as well
         }
         
         log(`${action} operation completed: ${results.successCount} success, ${results.failCount} failed`);

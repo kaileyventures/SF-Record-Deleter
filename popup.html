@@ -19,16 +19,28 @@
             --warning-yellow: #f59e0b;
         }
 
-        body { 
-            width: 300px; padding: 16px; font-family: 'Inter', sans-serif; margin: 0; 
+        html, body {
+            width: 320px;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
             background: radial-gradient(130% 130% at 50% -10%, var(--sf-navy) 0%, var(--bg-deep) 100%);
-            color: var(--text-main); overflow-x: hidden;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
         }
 
-        .container { display: flex; flex-direction: column; gap: 14px; }
+        .container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 14px; 
+            padding: 16px;
+            max-height: 600px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
 
-        #validTabScreen, #invalidTabScreen { 
-            display: none; flex-direction: column; gap: 12px; background: var(--card-glass);
+        #validTabScreen { 
+            display: flex; flex-direction: column; gap: 12px; background: var(--card-glass);
             backdrop-filter: blur(12px); border: 1px solid var(--border-light);
             border-top: 1px solid rgba(255,255,255,0.15); border-radius: 20px;
             padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -93,29 +105,29 @@
             font-size: 11px; 
             color: #bae6fd;
             scrollbar-width: thin;
-            scrollbar-color: var(--sf-primary) rgba(4, 9, 18, 0.8);
+            scrollbar-color: rgba(1, 118, 211, 0.4) rgba(4, 9, 18, 0.6);
             min-height: 80px;
         }
 
-        /* Custom Scrollbar Styling */
-        textarea::-webkit-scrollbar, #status::-webkit-scrollbar {
+        /* Custom Scrollbar Styling (Global) */
+        ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
         }
 
-        textarea::-webkit-scrollbar-track, #status::-webkit-scrollbar-track {
-            background: rgba(4, 9, 18, 0.8);
+        ::-webkit-scrollbar-track {
+            background: rgba(4, 9, 18, 0.6);
             border-radius: 10px;
         }
 
-        textarea::-webkit-scrollbar-thumb, #status::-webkit-scrollbar-thumb {
-            background: var(--sf-primary);
+        ::-webkit-scrollbar-thumb {
+            background: rgba(1, 118, 211, 0.4);
             border-radius: 10px;
             transition: background 0.3s;
         }
 
-        textarea::-webkit-scrollbar-thumb:hover, #status::-webkit-scrollbar-thumb:hover {
-            background: var(--sf-hover);
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(1, 118, 211, 0.7);
         }
 
         .button-group {
@@ -252,17 +264,6 @@
                 <button id="executeBtn">Execute Pipeline</button>
             </div>
             <div id="status"></div>
-        </div>
-
-        <div id="invalidTabScreen">
-            <div class="header">
-                <div class="logo-wrapper" style="background: #991b1b; animation: none;">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                </div>
-                <h3>Environment Locked</h3>
-                <p style="color: var(--text-muted); font-size: 12px;">Restricted to Salesforce CRM.</p>
-            </div>
-            <button id="findSfBtn" class="btn-error">Switch to Salesforce Tab</button>
         </div>
     </div>
     <script src="popup.js"></script>
