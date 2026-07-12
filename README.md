@@ -38,10 +38,30 @@ An ultra-sleek, modular Chrome Extension designed for **Salesforce CRM** adminis
 ## 🚀 How It Works
 
 ```mermaid
-graph LR
-    A[Paste IDs / JSON] --> B[Auto-Fetch SF Cookie]
-    B --> C[Execute API requests]
-    C --> D[Show color-coded Results]
+flowchart TD
+    subgraph Client [Chrome Extension UI]
+        Input[User Input: Action, Object API Name, Data Payload]
+        Validate{Validator: parsers.js}
+        UI[Status Dashboard: Rich HTML Counters]
+    end
+    
+    subgraph Auth [Security & Context Layer]
+        Cookie[Chrome Cookies API: Read active tab context]
+        Domain[Normalize Domain: Map Lightning/VF to MyDomain]
+    end
+
+    subgraph API [Salesforce REST Engine]
+        Prefix[Prefix Resolver: Map ID prefixes to Object Names]
+        Batch[HTTP Execution Queue: Rate-limiting & Backoff Retries]
+    end
+
+    Input --> Validate
+    Validate -- Validated Payload --> Cookie
+    Cookie --> Domain
+    Domain -- Auth Token & Domain --> API
+    API --> Prefix
+    Prefix --> Batch
+    Batch -- Real-Time Updates & Results --> UI
 ```
 
 ---
