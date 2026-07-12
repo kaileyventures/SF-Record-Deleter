@@ -29,9 +29,11 @@ An ultra-sleek, modular Chrome Extension designed for **Salesforce CRM** adminis
 
 ---
 
-## 🖼️ Screenshot
+<h2 align="center">🖼️ Screenshot</h2>
 
-![SF Record Deleter Screenshot](image.png)
+<p align="center">
+  <img src="image.png" alt="SF Record Deleter Screenshot">
+</p>
 
 ---
 
