@@ -1,143 +1,122 @@
-# SF-Record-Deleter ⚡️
+<p align="center">
+  <img src="icon48.png" alt="SF Record Deleter Logo" width="80" height="80">
+</p>
 
-[![Chrome Web Store](https://img.shields.io/badge/chrome--extension-ready-blue)](#)
-[![Salesforce API](https://img.shields.io/badge/Salesforce-API_v58.0-blueviolet)](#)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+<h1 align="center">⚡ SF Record Deleter</h1>
 
-A lightweight Chrome extension to bulk Delete, Insert, and Update Salesforce records directly from your browser using your current Salesforce session. Built for speed, safety, and simplicity. Ideal for admins and developers who need a quick record management tool without leaving the Salesforce tab.
+<p align="center">
+  <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.0-blueviolet?style=for-the-badge&logo=salesforce" alt="Version"></a>
+  <a href="manifest.json"><img src="https://img.shields.io/badge/Manifest-V3-orange?style=for-the-badge&logo=googlechrome" alt="Manifest Version"></a>
+  <a href="https://developer.chrome.com/docs/extensions"><img src="https://img.shields.io/badge/Platform-Chrome_Extension-blue?style=for-the-badge" alt="Platform"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
+</p>
+
+An ultra-sleek, modular Chrome Extension designed for **Salesforce CRM** administrators and developers. It serves as a rapid record manager to perform bulk **Delete**, **Insert**, and **Update** pipelines directly from the browser popup using your active Salesforce browser session—without configuring integrations or sharing API credentials. Features an interactive dashboard, automatic Object Name prefix-resolution, cancellation control, and color-coded status tracking.
 
 ---
 
-## 🔥 Features
+## 🌟 Key Features
 
-- Delete records by ID (supports 15 & 18 character IDs)
-- Insert and Update records via JSON payloads
-- Uses your current Salesforce session cookie — no extra auth steps
-- Resilient: retry logic, per-record error handling (continues on failures)
-- Cancel running operations anytime
-- Attractive, color-coded UI buttons for Delete / Insert / Update
+*   ⚡ **Zero-Configuration Authentication**: Instantly securely inherits session cookies (`sid`) from active Salesforce tabs (supports standard, custom, My Domain, and Visualforce URLs).
+*   🗑️ **Auto Prefix-Resolution**: Delete records by raw IDs; the extension dynamically queries Salesforce SObject metadata on the fly to match ID key-prefixes to correct Object API names automatically.
+*   📤 **Bulk Insert & Update**: Input arrays of JSON records directly. Insert new entries, or patch existing ones using their `Id` fields.
+*   🛑 **Abort & Control**: Cancel operations mid-stream with a single click of the pause/cancel button, allowing safe checkpoints.
+*   🎨 **Interactive Color-Coded Logs**: Real-time status reporting with multi-color highlights:
+    *   `Success` in **Green**
+    *   `Already Deleted` in **Orange**
+    *   `Failed` in **Red**
+*   🚀 **Enterprise Resiliency**: Equipped with exponential backoff retry algorithms and configurable rate-limiting (100ms throttle by default).
 
 ---
 
 ## 🖼️ Screenshot
 
-![Image](image.png)
+![SF Record Deleter Screenshot](image.png)
 
 ---
 
-## 🚀 Quick Start
+## 🚀 How It Works
 
-1. Clone the repo:
-
-   ```bash
-   git clone https://github.com/kaileyventures/SF-Record-Deleter.git
-   cd SF-Record-Deleter
-   ```
-
-2. Load the extension in Chrome:
-   - Go to chrome://extensions
-   - Enable "Developer mode"
-   - Click "Load unpacked" and select the repo folder
-
-3. Open a Salesforce tab, then open the extension popup and follow the UI.
+```mermaid
+graph LR
+    A[Paste IDs / JSON] --> B[Auto-Fetch SF Cookie]
+    B --> C[Execute API requests]
+    C --> D[Show color-coded Results]
+```
 
 ---
 
-## 🧭 Usage
-
-1. Open a Salesforce page (any salesforce.com / force.com domain).
-2. Open the extension popup.
-3. Choose action: Delete / Insert / Update.
-4. Enter Object API Name (e.g., `Account`, `Lead__c`).
-5. Paste data:
-   - For Delete: newline- or comma-separated record IDs (15 or 18 chars)
-   - For Insert/Update: JSON array of objects
-
-6. Click the action button to start. Use "Cancel Operation" to abort.
-
----
-
-## 📥 Examples
-
-Delete (IDs, newline-separated):
+## 📂 Project Architecture
 
 ```
+SF-Record-Deleter/
+├── icon48.png               # Extension icon (48x48)
+├── icon48.svg               # Vector source of extension icon
+├── gemini-svg.svg           # Custom vector assets
+├── popup.html               # Main popup structure, CSS styles & layout
+├── popup.js                 # Main orchestrator & UI controller
+├── src/                     # Modular business logic (ES Modules)
+│   ├── api/
+│   │   └── salesforce.js    # Cookie extractors, prefix mappings & execution flow
+│   ├── config/
+│   │   └── config.js        # Global configuration parameters & constants
+│   └── utils/
+│       └── parsers.js       # Payload parser, ID validator & logger helper
+├── manifest.json            # Extension configuration manifest
+└── README.md                # Documentation
+```
+
+---
+
+## 📥 Input Formats
+
+### 1. Delete (Comma- or Newline-separated IDs)
+```text
 001xx000003DGb1AAG
 003xx000004TmiHAAS
 ```
 
-Insert (JSON array):
-
+### 2. Insert (JSON Array)
 ```json
 [
   { "Name": "Acme Corp", "Industry": "Technology" },
-  { "Name": "Beta LLC", "Industry": "Finance" }
+  { "Name": "Cloud Solutions", "Industry": "Consulting" }
 ]
 ```
 
-Update (JSON array — must include `Id`):
-
+### 3. Update (JSON Array with `Id` fields)
 ```json
 [
   { "Id": "001xx000003DGb1AAG", "Industry": "Healthcare" },
-  { "Id": "001xx000003DGb2AAG", "Industry": "Retail" }
+  { "Id": "001xx000003DGb2AAG", "Industry": "Finance" }
 ]
 ```
 
 ---
 
-## 🔒 Authentication & Security
+## 🛠️ Installation & Setup
 
-- The extension reads the Salesforce session cookie (`sid`) from the active Salesforce tab — it does not ask for credentials.
-- Keep your Salesforce session secure. Do not use the extension on shared/public machines.
-- All requests are sent to the Salesforce REST API using the same domain your browser is on (domain normalization is handled).
-
----
-
-## ⚙️ Implementation Notes
-
-- API version used: v58.0 (configurable in `popup.js`)
-- Retries and rate-limiting are built in:
-  - Retry attempts: 3
-  - Request delay: 100ms (between records)
-- Error handling continues processing remaining records; failed records are reported at the end.
+1.  Clone this repository locally:
+    ```bash
+    git clone https://github.com/kaileyventures/SF-Record-Deleter.git
+    ```
+2.  Open **Google Chrome** and navigate to `chrome://extensions/`.
+3.  Enable **Developer mode** (toggle in the top-right corner).
+4.  Click on **Load unpacked** (top-left corner).
+5.  Select the `SF-Record-Deleter` root folder.
+6.  Open a Salesforce tab in Chrome, click the extension icon, and begin processing records!
 
 ---
 
-## 🛠️ Troubleshooting
+## 💡 Tech Stack
 
-- "Not on a Salesforce tab": Make sure you have an active tab with a Salesforce URL (salesforce.com / force.com).
-- "Cookie 'sid' not found": Refresh the Salesforce tab and try again (session cookie must be present).
-- JSON parsing errors: Ensure your JSON is a valid array. The extension will report the approximate line number of parse errors.
-- If operations fail repeatedly, check API permissions for the user and network restrictions.
-
----
-
-## 📣 Contributing
-
-Contributions are welcome! Suggested ways to help:
-
-- Add e2e tests for bulk operations
-- Improve UI/UX and accessibility
-- Support more Salesforce domain mappings or OAuth flows
-
-Please open issues/PRs with clear descriptions and examples.
+*   **HTML5 / CSS3** – Glassmorphic style design with responsive layouts and customized color accents.
+*   **JavaScript (ES Modules)** – Modern modular design allowing clean, componentized logic importing.
+*   **Salesforce REST API** – Integration with SObjects REST endpoints (using `v58.0` metadata endpoints).
+*   **Chrome Extension API (MV3)** – Manifest V3 compliant popup scripts and session permission scopes.
 
 ---
 
-## 🧾 Changelog
+## 📄 License
 
-See Git history for details. Keep the extension versioned in the manifest for release notes.
-
----
-
-## 📜 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## 🙋 Contact
-
-Built with ❤️ by the **KAILEY**VENTURES team.  
-For feedback or help: open an issue on this repository.
+Distributed under the MIT License. See `LICENSE` for more information.
